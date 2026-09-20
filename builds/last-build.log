@@ -1,0 +1,117 @@
+Fetching distribution.
+Downloading https://services.gradle.org/distributions/gradle-9.7.1-bin.zip
+..............10%..............20%...............30%..............40%...............50%..............60%...............70%..............80%..............90%...............100%
+
+Welcome to Gradle 9.7.1!
+
+Here are the highlights of this release:
+ - Isolated Projects graduates to incubating
+ - Broader Configuration Cache compatibility
+ - Resilient Sync helps you fix broken builds
+ - More source locations in problem reports
+
+For more details see https://docs.gradle.org/9.7.1/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration on demand is an incubating feature.
+Calculating task graph as no cached configuration is available for tasks: :src:en:thirsthub:assembleRelease
+Type-safe project accessors is an incubating feature.
+> Task :build-logic:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :build-logic:pluginDescriptors
+> Task :build-logic:processResources
+> Task :build-logic:compileKotlin
+> Task :build-logic:compileJava NO-SOURCE
+> Task :build-logic:classes
+> Task :build-logic:jar
+> Task :core:preBuild UP-TO-DATE
+> Task :core:preReleaseBuild UP-TO-DATE
+> Task :src:en:thirsthub:preBuild UP-TO-DATE
+> Task :src:en:thirsthub:preReleaseBuild UP-TO-DATE
+> Task :src:en:thirsthub:generateSourceInfo
+> Task :core:processReleaseNavigationResources
+> Task :core:generateReleaseResources
+> Task :core:mergeReleaseJniLibFolders
+> Task :src:en:thirsthub:mergeReleaseJniLibFolders
+> Task :core:javaPreCompileRelease
+> Task :core:mergeReleaseNativeLibs NO-SOURCE
+> Task :src:en:thirsthub:checkReleaseDuplicateClasses
+> Task :src:en:thirsthub:generateReleaseBuildConfig
+> Task :core:copyReleaseJniLibsProjectOnly
+> Task :src:en:thirsthub:processReleaseNavigationResources
+> Task :src:en:thirsthub:generateReleaseResources
+> Task :compiler:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :src:en:thirsthub:mergeReleaseNativeLibs NO-SOURCE
+> Task :src:en:thirsthub:stripReleaseDebugSymbols NO-SOURCE
+> Task :src:en:thirsthub:extractReleaseNativeSymbolTables NO-SOURCE
+> Task :src:en:thirsthub:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :compiler:processResources
+> Task :core:prepareReleaseArtProfile
+> Task :src:en:thirsthub:mergeReleaseArtProfile
+> Task :core:mapReleaseSourceSetPaths
+> Task :src:en:thirsthub:packageReleaseResources
+> Task :core:writeReleaseAarMetadata
+> Task :core:packageReleaseResources
+> Task :src:en:thirsthub:checkReleaseAarMetadata
+> Task :core:compileReleaseLibraryResources
+> Task :src:en:thirsthub:mapReleaseSourceSetPaths
+> Task :src:en:thirsthub:compileReleaseNavigationResources
+> Task :src:en:thirsthub:mergeReleaseResources
+> Task :src:en:thirsthub:createReleaseCompatibleScreenManifests
+> Task :core:extractDeepLinksRelease
+> Task :core:processReleaseManifest
+> Task :src:en:thirsthub:extractDeepLinksRelease
+> Task :src:en:thirsthub:generateExtensionManifest
+> Task :src:en:thirsthub:processReleaseMainManifest
+> Task :core:parseReleaseLocalResources
+> Task :src:en:thirsthub:parseReleaseLocalResources
+> Task :src:en:thirsthub:generateReleaseRFile
+> Task :core:generateReleaseRFile
+> Task :src:en:thirsthub:extractProguardFiles
+> Task :src:en:thirsthub:mergeReleaseStartupProfile
+> Task :core:generateReleaseAssets UP-TO-DATE
+> Task :core:mergeReleaseAssets
+> Task :src:en:thirsthub:generateReleaseAssets UP-TO-DATE
+> Task :src:en:thirsthub:mergeReleaseAssets
+> Task :src:en:thirsthub:processReleaseManifest
+> Task :src:en:thirsthub:compressReleaseAssets
+> Task :src:en:thirsthub:validateSigningRelease
+> Task :src:en:thirsthub:writeReleaseAppMetadata
+> Task :src:en:thirsthub:processReleaseManifestForPackage
+> Task :src:en:thirsthub:writeReleaseSigningConfigVersions
+> Task :src:en:thirsthub:processReleaseResources
+> Task :src:en:thirsthub:optimizeReleaseResources
+> Task :compiler:compileKotlin
+> Task :compiler:compileJava NO-SOURCE
+> Task :compiler:classes
+> Task :compiler:jar
+> Task :src:en:thirsthub:javaPreCompileRelease
+> Task :core:compileReleaseKotlin
+> Task :core:compileReleaseJavaWithJavac NO-SOURCE
+> Task :core:mergeReleaseGeneratedProguardFiles
+> Task :core:processReleaseJavaRes
+> Task :core:exportReleaseConsumerProguardFiles
+> Task :core:bundleLibCompileToJarRelease
+> Task :core:bundleLibRuntimeToJarRelease
+> Task :src:en:thirsthub:kspReleaseKotlin
+> Task :src:en:thirsthub:compileReleaseKotlin
+> Task :src:en:thirsthub:processReleaseJavaRes
+> Task :src:en:thirsthub:mergeReleaseJavaResource
+> Task :src:en:thirsthub:compileReleaseJavaWithJavac
+> Task :src:en:thirsthub:mergeReleaseGeneratedProguardFiles
+> Task :src:en:thirsthub:expandReleaseArtProfileWildcards
+> Task :src:en:thirsthub:minifyReleaseWithR8
+> Task :src:en:thirsthub:compileReleaseArtProfile
+> Task :src:en:thirsthub:packageRelease
+> Task :src:en:thirsthub:createReleaseApkListingFileRedirect
+
+> Task :src:en:thirsthub:createReleaseExtensionJar
+ProGuard, version 7.10.0
+
+> Task :src:en:thirsthub:signReleaseExtensionJar
+> Task :src:en:thirsthub:assembleRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1789904355821.json
+
+BUILD SUCCESSFUL in 2m 23s
+71 actionable tasks: 71 executed
+Configuration cache entry stored.
