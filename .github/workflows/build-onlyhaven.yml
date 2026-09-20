@@ -1,0 +1,196 @@
+name: Build extension
+
+# This repo builds the extension APKs for you.
+#
+#   * It runs by itself whenever sources under src/ change - i.e. whenever you upload a new
+#     extension folder - and can also be started by hand: Actions -> "Build extension" ->
+#     Run workflow (the module box lets you name a module, e.g. :src:en:onlyhaven).
+#   * The finished APK is copied to builds/<module>.apk and committed back here, so it gets a
+#     permanent public URL that anything can fetch:
+#         https://raw.githubusercontent.com/<owner>/<repo>/main/builds/<module>.apk
+#     It is also uploaded as a run artifact, in case you prefer downloading it by hand.
+#
+# The file name mentions "onlyhaven" for historical reasons - it builds whatever module it is
+# pointed at, so the same workflow serves every extension you add to this fork.
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Gradle module path to build, e.g. :src:en:onlyhaven (blank = whatever changed in the last commit)"
+        required: false
+        default: ""
+  push:
+    branches: [main, master]
+    paths:
+      - "src/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-extension
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # A shallow checkout has no parent commit to diff against, and the commit-back step
+          # below needs history so it can rebase onto anything that landed meanwhile.
+          fetch-depth: 0
+
+      - name: Work out which module to build
+        env:
+          REQUESTED: ${{ inputs.module }}
+        run: |
+          if [ -n "$REQUESTED" ]; then
+            MODULES="$REQUESTED"
+          else
+            # What this push changed: github.event.before -> the new head. Falls back to the
+            # last commit when the event has no usable "before" (first push, manual re-run).
+            BASE="${{ github.event.before }}"
+            case "$BASE" in ""|0000000000000000000000000000000000000000) BASE=$(git rev-parse "$GITHUB_SHA^" 2>/dev/null || echo "");; esac
+            if [ -n "$BASE" ]; then
+              CHANGED=$(git diff --name-only "$BASE" "$GITHUB_SHA" 2>/dev/null || true)
+            else
+              CHANGED=$(git show --pretty=format: --name-only "$GITHUB_SHA" 2>/dev/null || true)
+            fi
+            MODULES=$(printf '%s\n' "$CHANGED" \
+              | awk -F/ '/^src\/[^/]+\/[^/]+\// { print ":" $1 ":" $2 ":" $3 }' \
+              | sort -u | tr '\n' ' ')
+          fi
+          MODULES=$(echo "$MODULES" | xargs)
+          if [ -z "$MODULES" ]; then
+            echo "::error::Nothing to build - no extension under src/ changed in this push. To build a specific extension by hand, run this workflow and put its module path in the box, e.g. :src:en:onlyhaven"
+            exit 1
+          fi
+          echo "Building: $MODULES"
+          echo "MODULES=$MODULES" >> "$GITHUB_ENV"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # A signing key is the extension's identity: Mihon only accepts an update that is signed with
+      # the same key as the installed copy. So one key is reused forever, in this order:
+      #   1. the SIGNING_KEY secret (if you set one - the private option), then
+      #   2. the key committed at builds/signingkey.jks (the zero-setup option), then
+      #   3. a brand new key, which the last step commits so later builds reuse it.
+      - name: Get or create the signing key
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          if [ -n "$SIGNING_KEY" ]; then
+            echo "$SIGNING_KEY" | base64 -d > signingkey.jks
+            echo "Signing with the key from the SIGNING_KEY secret."
+          elif [ -f builds/signingkey.jks ]; then
+            cp builds/signingkey.jks signingkey.jks
+            echo "Signing with the key committed in builds/signingkey.jks."
+          else
+            keytool -genkeypair \
+              -keystore signingkey.jks \
+              -storepass onlyhaven -keypass onlyhaven \
+              -alias onlyhaven \
+              -keyalg RSA -keysize 2048 -validity 10950 \
+              -dname "CN=Extension, O=Self-signed, C=US"
+            echo "Made a fresh signing key."
+          fi
+
+      # --exclude-task spotlessCheck turns off the repo's code-style check. GitHub sets CI=true,
+      # which switches it on (preBuild -> spotlessCheck), and a build should never fail over formatting.
+      - name: Build
+        env:
+          ALIAS: ${{ secrets.ALIAS || 'onlyhaven' }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD || 'onlyhaven' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'onlyhaven' }}
+        run: |
+          set +e
+          FAILED=""
+          : > build.log
+          for MOD in $MODULES; do
+            echo "::group::Building $MOD"
+            ./gradlew "${MOD}:assembleRelease" --no-daemon --exclude-task spotlessCheck --console=plain 2>&1 | tee -a build.log
+            if [ "${PIPESTATUS[0]}" -ne 0 ]; then FAILED="$FAILED $MOD"; fi
+            echo "::endgroup::"
+          done
+          if [ -n "$FAILED" ]; then
+            echo "::error::The build failed for:$FAILED - the end of the log is saved to builds/last-build.log"
+            exit 1
+          fi
+
+      - name: Publish each APK to builds/
+        run: |
+          mkdir -p builds
+          for MOD in $MODULES; do
+            NAME="${MOD##*:}"
+            REL=$(printf '%s' "${MOD#:}" | tr ':' '/')
+            APK=$(ls -1 "$REL"/build/outputs/apk/release/*.apk 2>/dev/null | head -n1)
+            if [ -z "$APK" ]; then
+              echo "::error::No APK came out of $MOD (looked in $REL/build/outputs/apk/release/)"
+              exit 1
+            fi
+            cp "$APK" "builds/$NAME.apk"
+            echo "builds/$NAME.apk  <-  $APK"
+          done
+          cp signingkey.jks builds/signingkey.jks
+          ls -l builds
+
+      - name: Upload the APK as a run artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-apks
+          path: |
+            builds/*.apk
+            builds/signingkey.jks
+          retention-days: 30
+
+      # Even a failed build leaves a readable log in the repo, so nobody has to dig through the
+      # Actions UI on a phone to find out what went wrong.
+      - name: Keep the build log
+        if: always()
+        run: |
+          mkdir -p builds
+          if [ -f build.log ]; then
+            tail -c 100000 build.log > builds/last-build.log
+          else
+            echo "(nothing was logged)" > builds/last-build.log
+          fi
+          echo "Job status: ${{ job.status }}"
+
+      - name: Commit builds/ back to the repo
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f builds
+          if git diff --cached --quiet; then
+            echo "Nothing changed in builds/."
+            exit 0
+          else
+            git commit -m "Build ${MODULES} [skip ci]"
+          fi
+          # The branch can move while a build runs (a new extension pushed from the app, say),
+          # which would reject a plain push - so retry on top of whatever landed.
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Pushed builds/ back to the branch."
+              exit 0
+            fi
+            echo "::warning::The push was rejected (the branch moved); rebasing onto the new head and retrying."
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME" || { git rebase --abort; }
+            sleep 5
+          done
+          echo "::error::Could not push builds/ back to the branch. The APK is still in this run's artifacts, but builds/${MODULES##*:}.apk was not updated - re-run the workflow to publish it."
+          exit 0
